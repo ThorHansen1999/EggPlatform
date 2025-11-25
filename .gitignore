@@ -16,12 +16,13 @@ public_html/storage
 public_html/hot
 
 storage/*.key
+/docker/*.log
 .env
 Homestead.yaml
 Homestead.json
 /.vagrant
 .phpunit.result.cache
-
+.idea/
 /public/build
 /storage/pail
 .env.backup
