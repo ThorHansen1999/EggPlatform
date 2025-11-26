@@ -25,7 +25,7 @@ class ExceptionController extends Controller
 
         $exception->category = "internal"; // You can categorize exceptions if needed
         $exception->hash = md5($exception->message . $exception->file . $exception->line);
-        // $exception->save();
+        $exception->save();
 
         $result = $slackController->notify($exception);
         dump($exception);
