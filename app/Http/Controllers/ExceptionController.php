@@ -2,32 +2,38 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessExceptionJob;
 use Illuminate\Http\Request;
-use App\Models\CaughtException;
 
 class ExceptionController extends Controller
 {
     public function report(Request $request)
     {
-        $slackController = new SlackController();
-
         $validated = $request->validate([
             'exception_class' => 'required|string',
             'message' => 'required|string',
+            'code' => 'required',
             'file' => 'required',
             'line' => 'required',
             'trace' => 'required|string',
         ]);
 
-        // Custom logic to log exception to database or external service can be added here
-        $exception = CaughtException::fromRequest($validated);
-        
+        // Dispatch a job to Horizon/Redis queue
+        ProcessExceptionJob::dispatch($validated);
 
-        $exception->category = "internal"; // You can categorize exceptions if needed
-        $exception->hash = md5($exception->message . $exception->file . $exception->line);
-        $exception->save();
+        // Immediate response to the client
+        return response()->json(['status' => 'Exception reported successfully'], 200);
 
-        $result = $slackController->notify($exception);
-        dump($exception);
+//        $slackController = new SlackController();
+//
+//        // Custom logic to log exception to database or external service can be added here
+//        $exception = CaughtException::fromRequest($validated);
+//
+//
+//        $exception->category = "internal"; // You can categorize exceptions if needed
+//        $exception->hash = md5($exception->message . $exception->file . $exception->line);
+//        $exception->save();
+//
+//        $result = $slackController->notify($exception);
     }
 }
