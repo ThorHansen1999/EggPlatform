@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('exception_class');
             $table->text('message');
+            $table->text('code');
             $table->string('file');
             $table->integer('line');
             $table->longText('trace');
