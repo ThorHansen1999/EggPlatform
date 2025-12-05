@@ -96,7 +96,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       QUEUE_CONNECTION: redis
-    command: ["sh", "-c", "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"]
+    command: ["sh", "-c", "while true; do \ php artisan schedule:run --verbose --no-interaction; \ php /var/www/html/artisan schedule:run; \ sleep 60; \ done"]
     depends_on:
       - app
       - postgres

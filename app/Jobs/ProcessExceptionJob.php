@@ -51,7 +51,6 @@ class ProcessExceptionJob implements ShouldQueue
         dump($exception);
         $exception->save();
 
-        
         // Notify Slack
         $slackController = new SlackController();
         $slackController->notify($exception);
