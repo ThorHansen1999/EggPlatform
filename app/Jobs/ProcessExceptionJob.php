@@ -41,7 +41,8 @@ class ProcessExceptionJob implements ShouldQueue
         $exception->category = $this->determineCategory($exception);
         $exception->hash = md5($exception->message . $exception->file . $exception->line);
 
-        if(str_contains($exception->file, 'Carriers')) {
+        if(str_contains($exception->file, 'Carriers')) 
+        {
            
             $fileArray = explode('/', $exception->file);
             $carrierIndex = array_search("Carriers", $fileArray);
