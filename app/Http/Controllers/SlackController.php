@@ -78,6 +78,8 @@ class SlackController extends Controller
                 "timeout" => 5,
             ],
         ];
+
+        
         $context = stream_context_create($options);
         $result = @file_get_contents($webhookUrl, false, $context);
         return $result;
