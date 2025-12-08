@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use App\Helper\DetermineCategoryHelper;
 
 class ProcessExceptionJob implements ShouldQueue
 {
@@ -38,17 +39,17 @@ class ProcessExceptionJob implements ShouldQueue
         $exception->line = $this->data['line'];
         $exception->trace = $this->data['trace'];
 
-        $exception->category = $this->determineCategory($exception);
+        $exception->category = DetermineCategoryHelper::determineCategory($exception);
+//        $exception->category = $this->determineCategory($exception);
         $exception->hash = md5($exception->message . $exception->file . $exception->line);
 
-        if(str_contains($exception->file, 'Carriers')) 
+        if(str_contains($exception->file, 'Carriers'))
         {
-           
             $fileArray = explode('/', $exception->file);
             $carrierIndex = array_search("Carriers", $fileArray);
             $exception->carrier = $fileArray[$carrierIndex + 1];
         }
-        
+
         dump($exception);
         $exception->save();
 
@@ -65,12 +66,10 @@ class ProcessExceptionJob implements ShouldQueue
         $code = $exception->code ?? null;
         $message = $exception->message ?? '';
 
-        // 1. External: Exception originated from vendor code
         if (str_contains($file, '/vendor/')) {
             return 'external';
         }
 
-        // 2. External: HTTP client / API issues
         if (
             str_contains($class, 'Guzzle') ||
             str_contains($class, 'HttpClient') ||
@@ -81,7 +80,6 @@ class ProcessExceptionJob implements ShouldQueue
             return 'external';
         }
 
-        // 3. External: Database / Redis / infrastructure issues
         if (
             str_contains($class, 'PDOException') ||
             str_contains($class, 'QueryException') ||
@@ -91,18 +89,16 @@ class ProcessExceptionJob implements ShouldQueue
             return 'external';
         }
 
-        // 4. External: 500+ HTTP status codes
         if (is_numeric($code) && $code >= 500 && $code <= 599) {
             return 'external';
         }
 
-        // 5. Internal: Your application code (App namespace or app/ directory)
-        if (
-            str_contains($file, '/app/') ||
-            str_contains($class, 'App\\')
-        ) {
-            return 'internal';
-        }
+//        if (
+//            str_contains($file, '/app/') ||
+//            str_contains($class, 'App\\')
+//        ) {
+//            return 'internal';
+//        }
 
         // Default safe assumption
         return 'internal';

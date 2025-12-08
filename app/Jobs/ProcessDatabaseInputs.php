@@ -36,11 +36,6 @@ class ProcessDatabaseInputs implements ShouldQueue
                // Notify Slack
                 $slackController->notifyError($carrier, $carrierRecords->count());
            }
-            
-         
         }
-
-        
-
     }
 }
