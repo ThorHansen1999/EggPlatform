@@ -4,6 +4,8 @@ namespace App\Helper;
 
 use App\Models\CaughtException;
 use Illuminate\Support\Facades\Log;
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
 
 class DetermineCategoryHelper
 {
@@ -69,6 +71,11 @@ class DetermineCategoryHelper
 
         Log::info("DetermineCategoryHelper: externalCount={$externalCount}, internalCount={$internalCount}");
 
+        if ($externalCount === $internalCount) {
+            return 'uncategorized';
+            // return self::determineCategoryWithAI($blob);
+        }
+
         // Prefer external only if strictly greater; ties default to internal
         return $externalCount > $internalCount ? 'external' : 'internal';
     }
@@ -86,5 +93,22 @@ class DetermineCategoryHelper
             $count += substr_count($text, $needle);
         }
         return $count;
+    }
+
+    public static function determineCategoryWithAI(string $exceptionBlob) {
+        $response = Prism::text()
+           ->using(Provider::TryFrom(config('egg.ai_provider')), config("egg.ai_model"))
+           ->withPrompt("Respond with either External or Internal (only those words, no filler response) based on whether the following exception is caused by external factors (like user input, network issues, third-party services) or internal factors (like bugs in the code, server issues). Determine whether or not the exceptions are caused by third party integration downtime. Exception information: " . $exceptionBlob)
+           ->asText();
+
+        \Log::info("DetermineCategoryHelper AI response: " . $response);
+
+        if ($response === 'external' || $response === 'External') {
+            return 'externalAI';
+        } elseif ($response === 'internal' || $response === 'Internal') {
+            return 'internalAI';
+        } else {
+            return 'uncategorized';
+        }
     }
 }
