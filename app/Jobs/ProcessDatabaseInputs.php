@@ -21,8 +21,10 @@ class ProcessDatabaseInputs implements ShouldQueue
         $MinutesAgo = Carbon::now()->subMinutes(30);
         $maxCount = 5;
         $records = CaughtException::where('created_at', '>=', $MinutesAgo)
-        ->where('category', 'external')
+        ->whereIn('category', ['external', 'ExternalAI'])
         ->get();
+
+        \Log::info("Total records found: ".$records->count());
 
         $groups = $records->groupBy('carrier');
 

@@ -17,17 +17,13 @@ class ProcessExceptionJob implements ShouldQueue
 
     public array $data;
 
-    /**
-     * Create a new job instance.
-     */
+    // Create a new job instance.
     public function __construct(array $data)
     {
         $this->data = $data;
     }
 
-    /**
-     * Execute the job.
-     */
+    // Execute the job.
     public function handle(): void
     {
         // Save to database
@@ -39,6 +35,7 @@ class ProcessExceptionJob implements ShouldQueue
         $exception->line = $this->data['line'];
         $exception->trace = $this->data['trace'];
 
+        // Determine category
         $exception->category = DetermineCategoryHelper::determineCategoryWithAI($exception);
 //        $exception->category = $this->determineCategory($exception);
         $exception->hash = md5($exception->message . $exception->file . $exception->line);
@@ -56,51 +53,5 @@ class ProcessExceptionJob implements ShouldQueue
         // Notify Slack
         $slackController = new SlackController();
         $slackController->notify($exception);
-    }
-
-    public function determineCategory(CaughtException $exception): string
-    {
-        $class = $exception->exception_class ?? '';
-        $file = $exception->file ?? '';
-        $trace = $exception->trace ?? '';
-        $code = $exception->code ?? null;
-        $message = $exception->message ?? '';
-
-        if (str_contains($file, '/vendor/')) {
-            return 'external';
-        }
-
-        if (
-            str_contains($class, 'Guzzle') ||
-            str_contains($class, 'HttpClient') ||
-            str_contains($message, 'cURL error') ||
-            str_contains($message, 'timed out') ||
-            str_contains($message, 'Connection refused')
-        ) {
-            return 'external';
-        }
-
-        if (
-            str_contains($class, 'PDOException') ||
-            str_contains($class, 'QueryException') ||
-            str_contains($message, 'SQLSTATE[') ||
-            str_contains($message, 'RedisException')
-        ) {
-            return 'external';
-        }
-
-        if (is_numeric($code) && $code >= 500 && $code <= 599) {
-            return 'external';
-        }
-
-//        if (
-//            str_contains($file, '/app/') ||
-//            str_contains($class, 'App\\')
-//        ) {
-//            return 'internal';
-//        }
-
-        // Default safe assumption
-        return 'internal';
     }
 }

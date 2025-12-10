@@ -4,10 +4,12 @@ namespace App\Helper;
 
 use App\Models\CaughtException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use Prism\Prism\Facades\Prism;
+use Prism\Prism\Enums\Provider;
 
 class DetermineCategoryHelper
 {
+    // Keywords indicating external issues
     public const EXTERNAL_KEYWORDS = [
         // Network/IO
         'network', 'timeout', 'timed out', 'connection refused', 'connection reset', 'socket', 'dns', 'lookup', 'host unreachable', 'broken pipe',
@@ -29,6 +31,7 @@ class DetermineCategoryHelper
         '500', '501', '502', '503', '504', '505', '5xx',
     ];
 
+    // Keywords indicating internal issues
     public const INTERNAL_KEYWORDS = [
         // Language/runtime
         'null pointer', 'call to a member function on null', 'undefined variable', 'undefined index', 'type error', 'type mismatch', 'argument count', 'invalid argument', 'division by zero', 'out of bounds', 'index out of range', 'overflow', 'underflow', 'assertion failed', 'assert', 'invariant', 'illegal state', 'not implemented', 'todo', 'deprecated',
@@ -47,7 +50,7 @@ class DetermineCategoryHelper
     ];
 
 
-    // Make method static for easier utility-style usage
+    // Determine category based on keyword heuristics
     public static function determineCategory(CaughtException $exception): string
     {
         $class = $exception->exception_class ?? '';
@@ -70,28 +73,16 @@ class DetermineCategoryHelper
 
         Log::info("DetermineCategoryHelper: externalCount={$externalCount}, internalCount={$internalCount}");
 
+        // If counts are equal, defer to AI-based determination
         if ($externalCount === $internalCount) {
-            // Use AI via Prism/Ollama when heuristic ties
-            try {
-                dump("Biitch");
-                $aiCategory = self::determineCategoryWithAI($blob);
-                if (in_array($aiCategory, ['externalAI', 'internalAI'])) {
-                    return $aiCategory;
-                }
-            } catch (\Throwable $t) {
-                Log::warning('DetermineCategoryHelper AI fallback failed: ' . $t->getMessage());
-            }
-            return 'uncategorized';
-       }
+            return self::determineCategoryWithAI($exception);
+        }
 
         // Prefer external only if strictly greater; ties default to internal
         return $externalCount > $internalCount ? 'external' : 'internal';
     }
 
-    /**
-     * Count occurrences of each keyword within the given text, case-insensitive.
-     * Uses simple substring matching; for bracketed tokens like 'sqlstate[' it still works.
-     */
+    // Count occurrences of any of the keywords in the given text
     private static function countKeywordMatches(array $keywords, string $text): int
     {
         $count = 0;
@@ -103,34 +94,52 @@ class DetermineCategoryHelper
         return $count;
     }
 
-    public static function determineCategoryWithAI(string $exceptionBlob) {
-        // Use Ollama REST API
-        $base = rtrim(config('egg.ollama_base_url', 'http://localhost:11434'), '/');
-        $model = config('egg.ai_model', 'deepseek-r1:8b');
-        $prompt = "Respond with either External or Internal (only those words, no filler response) based on whether the following exception is caused by external factors (like user input, network issues, third-party services) or internal factors (like bugs in the code, server issues). Determine whether or not the exceptions are caused by third party integration downtime. Exception information: " . $exceptionBlob;
+    // Use AI to determine category when heuristic is inconclusive
+    public static function determineCategoryWithAI(CaughtException $exception): string
+    {
+        // Old prompt
+//        $prompt = "Respond with either External or Internal (only those words, no filler response) based
+//           on whether the following exception is caused by external factors (like user input, network issues, third-party services)
+//           or internal factors (like bugs in the code, server issues).
+//           Determine whether or not the exceptions are caused by third party integration downtime.
+//           Exception information: {$exception}";
 
-        $resp = Http::timeout(60)
-            ->post($base . '/api/generate', [
-                'model' => $model,
-                'prompt' => $prompt,
-                'stream' => false,
-            ]);
+        // New prompt with deterministic rules
+        $prompt = "Classify the exception strictly using the following deterministic rules:
 
-        if ($resp->failed()) {
-            \Log::warning('Ollama generate failed: ' . $resp->status() . ' ' . $resp->body());
-            return 'uncategorized';
+            1. If the file path or class name contains 'Carriers' or a known carrier name
+               (e.g., Bring, DAO, GLS, PostNord, UPS, FedEx), classify as External.
+               These paths indicate integration with external providers.
+
+            2. If the exception message or trace contains keywords related to network issues
+               (timeout, connection refused, DNS, cURL error, 5xx from external service), classify as External.
+
+            3. If the error occurs inside business logic outside the Carriers/ folder
+               and has no signs of external systems, classify as Internal.
+
+            4. If the cause is unclear or ambiguous, default to Internal.
+
+            Only respond with a single word: External or Internal.
+
+            Exception:
+            {$exception}";
+
+        \Log::info("DetermineCategoryHelper AI prompt: " . $prompt);
+        $response = Prism::text()
+           ->using(Provider::TryFrom(config('egg.ai_provider')), config("egg.ai_model"))
+           ->withPrompt($prompt)
+           ->asText();
+
+        \Log::info("DetermineCategoryHelper AI response: " . $response->text);
+
+        // Return based on AI response, default to uncategorized if unclear
+        $text = strtolower($response->text);
+        if (str_contains($text, 'external')) {
+            return 'ExternalAI';
         }
-
-        $json = $resp->json();
-        $response = $json['response'] ?? '';
-        \Log::info("DetermineCategoryHelper AI response (Ollama): " . $response);
-
-        if ($response === 'external' || $response === 'External') {
-            return 'externalAI';
-        } elseif ($response === 'internal' || $response === 'Internal') {
-            return 'internalAI';
-        } else {
-            return 'uncategorized';
+        if (str_contains($text, 'internal')) {
+            return 'InternalAI';
         }
+        return 'Uncategorized';
     }
 }

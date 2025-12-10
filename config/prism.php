@@ -22,7 +22,7 @@ return [
             'anthropic_beta' => env('ANTHROPIC_BETA', null),
         ],
         'ollama' => [
-            'url' => env('PRISM_OLLAMA_BASE_URL', 'http://ollama:11434'),
+            'url' => env('PRISM_OLLAMA_BASE_URL', 'http://localhost:11434'),
             'model'    => env('PRISM_OLLAMA_MODEL', 'deepseek-r1:8b'),
         ],
         'mistral' => [
