@@ -21,9 +21,9 @@ return [
             // Include beta strings as a comma separated list.
             'anthropic_beta' => env('ANTHROPIC_BETA', null),
         ],
-       'ollama' => [
-            'url' => env('PRISM_OLLAMA_BASE_URL', 'http://localhost:11434'),
-            'model'    => env('PRISM_OLLAMA_MODEL', 'deepseek-r1:1.5b'),
+        'ollama' => [
+            'url' => env('PRISM_OLLAMA_BASE_URL', 'http://ollama:11434'),
+            'model'    => env('PRISM_OLLAMA_MODEL', 'deepseek-r1:8b'),
         ],
         'mistral' => [
             'api_key' => env('MISTRAL_API_KEY', ''),

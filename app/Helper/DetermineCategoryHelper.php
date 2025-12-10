@@ -4,8 +4,7 @@ namespace App\Helper;
 
 use App\Models\CaughtException;
 use Illuminate\Support\Facades\Log;
-use Prism\Prism\Facades\Prism;
-use Prism\Prism\Enums\Provider;
+use Illuminate\Support\Facades\Http;
 
 class DetermineCategoryHelper
 {
@@ -72,9 +71,18 @@ class DetermineCategoryHelper
         Log::info("DetermineCategoryHelper: externalCount={$externalCount}, internalCount={$internalCount}");
 
         if ($externalCount === $internalCount) {
+            // Use AI via Prism/Ollama when heuristic ties
+            try {
+                dump("Biitch");
+                $aiCategory = self::determineCategoryWithAI($blob);
+                if (in_array($aiCategory, ['externalAI', 'internalAI'])) {
+                    return $aiCategory;
+                }
+            } catch (\Throwable $t) {
+                Log::warning('DetermineCategoryHelper AI fallback failed: ' . $t->getMessage());
+            }
             return 'uncategorized';
-            // return self::determineCategoryWithAI($blob);
-        }
+       }
 
         // Prefer external only if strictly greater; ties default to internal
         return $externalCount > $internalCount ? 'external' : 'internal';
@@ -96,12 +104,26 @@ class DetermineCategoryHelper
     }
 
     public static function determineCategoryWithAI(string $exceptionBlob) {
-        $response = Prism::text()
-           ->using(Provider::TryFrom(config('egg.ai_provider')), config("egg.ai_model"))
-           ->withPrompt("Respond with either External or Internal (only those words, no filler response) based on whether the following exception is caused by external factors (like user input, network issues, third-party services) or internal factors (like bugs in the code, server issues). Determine whether or not the exceptions are caused by third party integration downtime. Exception information: " . $exceptionBlob)
-           ->asText();
+        // Use Ollama REST API
+        $base = rtrim(config('egg.ollama_base_url', 'http://localhost:11434'), '/');
+        $model = config('egg.ai_model', 'deepseek-r1:8b');
+        $prompt = "Respond with either External or Internal (only those words, no filler response) based on whether the following exception is caused by external factors (like user input, network issues, third-party services) or internal factors (like bugs in the code, server issues). Determine whether or not the exceptions are caused by third party integration downtime. Exception information: " . $exceptionBlob;
 
-        \Log::info("DetermineCategoryHelper AI response: " . $response);
+        $resp = Http::timeout(60)
+            ->post($base . '/api/generate', [
+                'model' => $model,
+                'prompt' => $prompt,
+                'stream' => false,
+            ]);
+
+        if ($resp->failed()) {
+            \Log::warning('Ollama generate failed: ' . $resp->status() . ' ' . $resp->body());
+            return 'uncategorized';
+        }
+
+        $json = $resp->json();
+        $response = $json['response'] ?? '';
+        \Log::info("DetermineCategoryHelper AI response (Ollama): " . $response);
 
         if ($response === 'external' || $response === 'External') {
             return 'externalAI';

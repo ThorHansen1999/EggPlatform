@@ -1,4 +1,14 @@
 services:
+
+  prism:
+    image: stoplight/prism:4
+    command: 'mock -h 0.0.0.0 /tmp/api.oas3.yml'
+    volumes:
+      - ./api.oas3.yml/api.yaml:/tmp/api.oas3.yml:ro
+    ports:
+      # Serve the mocked API locally as available on port 8080
+      - '8067:4010'
+
   app:
     build:
       context: .
@@ -96,13 +106,29 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       QUEUE_CONNECTION: redis
-    command: ["sh", "-c", "while true; do \ php artisan schedule:run --verbose --no-interaction; \ php /var/www/html/artisan schedule:run; \ sleep 60; \ done"]
+    command: ["sh", "-c", "while true; do \\ php artisan schedule:run --verbose --no-interaction; \\ php /var/www/html/artisan schedule:run; \\ sleep 60; \\ done"]
     depends_on:
       - app
       - postgres
       - redis
     volumes:
       - ./:/var/www/html
+
+  # Ollama service to run local LLMs like deepseek-r1:8b
+  ollama:
+    image: ollama/ollama:latest
+    container_name: eggplatform-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    # Uncomment the following to enable NVIDIA GPU acceleration if available
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
 
   # Optional database admin UI (enable with --profile tools)
   pgadmin:
@@ -121,6 +147,7 @@ services:
 volumes:
   pgdata:
   redisdata:
+  ollama:
 
 # Notes:
 #  - Horizon replaces legacy queue-worker; scale via: docker compose up -d --scale horizon=3

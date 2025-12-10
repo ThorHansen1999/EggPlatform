@@ -39,7 +39,7 @@ class ProcessExceptionJob implements ShouldQueue
         $exception->line = $this->data['line'];
         $exception->trace = $this->data['trace'];
 
-        $exception->category = DetermineCategoryHelper::determineCategory($exception);
+        $exception->category = DetermineCategoryHelper::determineCategoryWithAI($exception);
 //        $exception->category = $this->determineCategory($exception);
         $exception->hash = md5($exception->message . $exception->file . $exception->line);
 
