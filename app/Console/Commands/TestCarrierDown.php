@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\DetectCarrierOutages;
 use App\Jobs\ProcessDatabaseInputs;
 use Illuminate\Console\Command;
 
@@ -26,6 +27,6 @@ class TestCarrierDown extends Command
      */
     public function handle()
     {
-        ProcessDatabaseInputs::dispatch();
+        DetectCarrierOutages::dispatch();
     }
 }

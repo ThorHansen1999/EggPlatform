@@ -125,6 +125,7 @@ class DetermineCategoryHelper
             {$exception}";
 
         \Log::info("DetermineCategoryHelper AI prompt: " . $prompt);
+
         $response = Prism::text()
            ->using(Provider::TryFrom(config('egg.ai_provider')), config("egg.ai_model"))
            ->withPrompt($prompt)
