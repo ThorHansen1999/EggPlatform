@@ -26,7 +26,7 @@ class DetectCarrierOutages implements ShouldQueue
             ->whereIn('category', ['external', 'ExternalAI'])
             ->get();
 
-        \Log::info("Total records found: ".$records->count());
+        \Log::info("Total records found: " . $records->count());
 
         // Group records by carrier
         $groups = $records->groupBy('carrier');
@@ -34,7 +34,7 @@ class DetectCarrierOutages implements ShouldQueue
         // Log grouped counts and notify if threshold exceeded
         foreach ($groups as $carrier => $carrierRecords) {
            if(count($carrierRecords) >= $maxCount) {
-               \Log::info("Processing carrier: $carrier, count: ".$carrierRecords->count());
+               \Log::info("Processing carrier: $carrier, count: " . $carrierRecords->count());
                $slackController->notifyError($carrier, $carrierRecords->count());
            }
         }

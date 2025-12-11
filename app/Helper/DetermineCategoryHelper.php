@@ -3,7 +3,6 @@
 namespace App\Helper;
 
 use App\Models\CaughtException;
-use Illuminate\Support\Facades\Log;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Enums\Provider;
 
@@ -71,7 +70,7 @@ class DetermineCategoryHelper
         $externalCount = self::countKeywordMatches(self::EXTERNAL_KEYWORDS, $blob);
         $internalCount = self::countKeywordMatches(self::INTERNAL_KEYWORDS, $blob);
 
-        Log::info("DetermineCategoryHelper: externalCount={$externalCount}, internalCount={$internalCount}");
+        \Log::info("DetermineCategoryHelper: externalCount={$externalCount}, internalCount={$internalCount}");
 
         // If counts are equal, defer to AI-based determination
         if ($externalCount === $internalCount) {
@@ -126,8 +125,11 @@ class DetermineCategoryHelper
 
         \Log::info("DetermineCategoryHelper AI prompt: " . $prompt);
 
+        $provider = Provider::TryFrom(config('egg.ai_provider'));
+        $model = config("egg.ai_model");
+
         $response = Prism::text()
-           ->using(Provider::TryFrom(config('egg.ai_provider')), config("egg.ai_model"))
+           ->using($provider, $model)
            ->withPrompt($prompt)
            ->asText();
 

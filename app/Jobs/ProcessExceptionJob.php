@@ -47,7 +47,8 @@ class ProcessExceptionJob implements ShouldQueue
             $exception->carrier = $fileArray[$carrierIndex + 1];
         }
 
-        dump($exception);
+        // Log and save
+        \Log::info("Saving exception in database: " . $exception);
         $exception->save();
 
         // Notify Slack
