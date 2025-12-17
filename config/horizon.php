@@ -207,7 +207,8 @@ return [
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 1,
-            'timeout' => 60,
+            'timeout' => 660, // 11 minutes to allow for slow CPU AI inference
+            'retry_After' => 660,
             'nice' => 0,
         ],
     ],
@@ -218,12 +219,14 @@ return [
                 'maxProcesses' => 10,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
+                'retry_After' => 660,
             ],
         ],
 
         'local' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
+                'retry_After' => 660,
             ],
         ],
     ],

@@ -17,6 +17,17 @@ class ProcessExceptionJob implements ShouldQueue
 
     public array $data;
 
+    /**
+     * The number of seconds the job can run before timing out.
+     * Set high to allow for slow CPU-based AI inference.
+     */
+    public int $timeout = 600; // 10 minutes
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public int $tries = 1;
+
     // Create a new job instance.
     public function __construct(array $data)
     {

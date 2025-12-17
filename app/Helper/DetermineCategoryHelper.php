@@ -4,7 +4,6 @@ namespace App\Helper;
 
 use App\Models\CaughtException;
 use Prism\Prism\Facades\Prism;
-use Prism\Prism\Enums\Provider;
 
 class DetermineCategoryHelper
 {
@@ -125,12 +124,13 @@ class DetermineCategoryHelper
 
         \Log::info("DetermineCategoryHelper AI prompt: " . $prompt);
 
-        $provider = Provider::TryFrom(config('egg.ai_provider'));
+        $provider = config('egg.ai_provider');
         $model = config("egg.ai_model");
 
         $response = Prism::text()
            ->using($provider, $model)
            ->withPrompt($prompt)
+            ->withClientOptions(['timeout' => 300])
            ->asText();
 
         \Log::info("DetermineCategoryHelper AI response: " . $response->text);
