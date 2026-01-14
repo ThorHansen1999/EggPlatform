@@ -95,14 +95,6 @@ class DetermineCategoryHelper
     // Use AI to determine category when heuristic is inconclusive
     public static function determineCategoryWithAI(CaughtException $exception): string
     {
-        // Old prompt
-//        $prompt = "Respond with either External or Internal (only those words, no filler response) based
-//           on whether the following exception is caused by external factors (like user input, network issues, third-party services)
-//           or internal factors (like bugs in the code, server issues).
-//           Determine whether or not the exceptions are caused by third party integration downtime.
-//           Exception information: {$exception}";
-
-        // New prompt with deterministic rules
         $prompt = "Classify the exception strictly using the following deterministic rules:
 
             1. If the file path or class name contains 'Carriers' or a known carrier name
