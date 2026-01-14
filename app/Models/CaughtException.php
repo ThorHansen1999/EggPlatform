@@ -17,6 +17,7 @@ class CaughtException extends Model
         'trace',
         'category',
         'hash',
+        'carrier'
     ];
 
     protected $casts = [
@@ -43,6 +44,7 @@ class CaughtException extends Model
         $model->file = $request['file'];
         $model->line = $request['line'];
         $model->trace = $request['trace'];
+        
         return $model;
     }
 }

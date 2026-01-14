@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: EggPlatform Mock API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8067
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /exceptions:
+    get:
+      summary: List exceptions
+      responses:
+        '200':
+          description: A list of exceptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    message:
+                      type: string
+                      example: "Example error message"
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2025-12-09T12:34:56Z"
+

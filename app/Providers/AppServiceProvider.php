@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Helper\PreloadOllamaHelper;
+use App\Jobs\PreloadOllamaModel;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

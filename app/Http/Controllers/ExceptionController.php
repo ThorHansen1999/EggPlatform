@@ -9,19 +9,14 @@ class ExceptionController extends Controller
 {
     public function report(Request $request)
     {
-        dd("test");
-
-//        $validated = $request->validate([
-//            'exception_class' => 'required|string',
-//            'message' => 'required|string',
-//            'code' => 'required',
-//            'file' => 'required',
-//            'line' => 'required',
-//            'trace' => 'required|string',
-//        ]);
-
-        $validated = $request->all();
-        \Log::debug($validated);
+        $validated = $request->validate([
+            'exception_class' => 'required|string',
+            'message' => 'required|string',
+            'code' => 'required',
+            'file' => 'required',
+            'line' => 'required',
+            'trace' => 'required|string',
+        ]);
 
         // Dispatch a job to Horizon/Redis queue
         ProcessExceptionJob::dispatch($validated);

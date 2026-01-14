@@ -7,10 +7,11 @@ use Illuminate\Http\Request;
 
 class SlackController extends Controller
 {
-    public function notify(CaughtException $exception){
+    public function notify(CaughtException $exception)
+    {
         $webhookUrl = config("egg.slack_webhook_url");
         if (!$webhookUrl) {
-            dump("Slack webhook URL is not configured.");
+            \Log::info("Slack webhook URL is not configured.");
             return false;
         }
 
@@ -78,6 +79,35 @@ class SlackController extends Controller
                 "timeout" => 5,
             ],
         ];
+
+
+        $context = stream_context_create($options);
+        $result = @file_get_contents($webhookUrl, false, $context);
+        return $result;
+    }
+
+    public function notifyError(string $carrier, int $count){
+        $webhookUrl = config("egg.slack_webhook_url");
+        if (!$webhookUrl) {
+            \Log::info("Slack webhook URL is not configured.");
+            return false;
+        }
+
+        $payload = json_encode([
+            "text" => $carrier . " " . $count,
+
+        ]);
+
+        $options = [
+            "http" => [
+                "method"  => "POST",
+                "header"  => "Content-Type: application/json\r\n",
+                "content" => $payload,
+                "timeout" => 5,
+            ],
+        ];
+
+
         $context = stream_context_create($options);
         $result = @file_get_contents($webhookUrl, false, $context);
         return $result;
